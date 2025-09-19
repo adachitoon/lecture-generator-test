@@ -186,7 +186,10 @@ class SectionContentService:
 2. 自然な話し言葉での双方向性
 3. 具体例とケーススタディ
 4. 次セクション「{next_section_info}」への正確な言及
-{additional_text}
+5. {additional_text}の要素が入力された場合は必ず台本の中身に入れ込むことを忘れないでください
+
+【記述条件】
+• 「**」などの装飾は使わず、出力する前に「**」などの表現が入っていないか確認して、入っていたら「**」のみ削除して出力すること
 
 【JSON出力形式】
 ```json
@@ -210,27 +213,47 @@ class SectionContentService:
         next_text = f"{context_info['next_section']['number']}. {context_info['next_section']['title']}" if context_info.get('next_section') else "なし（最後）"
         subsections = ', '.join([sub['title'] for sub in context_info['subsections']]) if context_info['subsections'] else 'なし'
         objectives = '\n'.join([f"- {obj}" for obj in context_info['learning_objectives']])
-        
-        return f"""講座設計専門家として、階層付きアウトライン形式で詳細な学習内容を設計してください。
+
+        return f"""講座設計専門家として、以下の構造でマインドマップ化しやすい体言止め形式の学習内容を設計してください。
 
 【講座情報】
 講座: {context_info['course_title']} | 対象: {context_info['course_target']} | 難易度: {context_info['course_difficulty']}
 セクション: {context_info['section_number']}. {context_info['section_title']} | 時間: {context_info['estimated_duration']}分
 サブセクション: {subsections}
 前後: 前「{prev_text}」→ 次「{next_text}」
+追加要素: {context_info['additional_elements']}
 
 【学習目標】
 {objectives}
 
-【要件】包括的・階層構造(I.→A.→1.→a.)・復習用リファレンス
+【構造化アウトライン形式】
+講義の目的
+〜〜とは（そもそもの定義と簡潔な説明を一言で）
+〜〜の重要性（なぜ必要か・メリット・影響を箇条書き3点）
+〜〜の全体像（全体像・STEP・要素分解・各要素の役割説明）
+〜〜の具体的な解説（STEPごとの具体的な解説・進め方・手順・各要素の解説等を記載）
+〜〜の補足（本文で最も重要な要素を補足として1つだけ追加）
+〜〜の課題（講義視聴後の行動やアクションプランを具体的に提示）
+
+【記述条件】
+• 説明は専門用語に偏らず、初心者にも理解できる言葉を使う
+• 実務に落とし込めるよう具体例や比喩を交える
+• 体言止めを基本とする（マインドマップ化を前提）
+• 無駄な修飾語や冗長表現は完全に排除する
+• 段落形式で簡潔に（理解に必要な情報のみ）記述する
+• 具体的な解説パートは、全体像パートの3倍のボリュームで具体的な説明をする
+• 「**」などの装飾は使わず、出力する前に「**」などの表現が入っていないか確認して、入っていたら「**」のみ削除して出力すること
+• マインドマップ化を前提とするため、必ず一文は短く、構造化して階層構造で出力すること
+• 各要素が並列なのか上下関係なのかを出力前に確認し、適切な階層に修正を完了させた上で出力すること
 
 【JSON出力】
 ```json
 {{
   "section_title": "{context_info['section_title']}",
   "section_number": "{context_info['section_number']}",
-  "structured_outline_text": "I. {context_info['section_title']} - 概要\\n\\nA. 学習の目的\\n   1. 主要な目的\\n      a. 具体的な目的1\\n      b. 具体的な目的2\\n   2. 実務での価値\\n      a. なぜ重要か\\n      b. どこで使われるか\\n\\nB. 基本概念・定義\\n   1. 基本定義\\n      a. {context_info['section_title']}とは何か\\n      b. キーワード・専門用語\\n   2. 重要な特徴\\n      a. 特徴1の説明\\n      b. 特徴2の説明\\n      c. 特徴3の説明\\n   3. 類似概念との違い\\n      a. 混同しやすい概念\\n      b. 正しい区別方法\\n\\nC. 具体例・実践事例\\n   1. 基本的な例\\n      a. シンプルで分かりやすい例\\n      b. 身近な例\\n   2. 実務レベルの応用例\\n      a. 実際の現場での使用例\\n      b. 複合的な活用例\\n   3. ケーススタディ\\n      a. 成功事例とその要因\\n      b. 失敗例から学ぶ教訓\\n\\nD. 実践・活用方法\\n   1. 基本的な手順・使い方\\n      a. ステップ1の詳細\\n      b. ステップ2の詳細\\n      c. ステップ3の詳細\\n   2. 応用テクニック\\n      a. 効率化のコツ\\n      b. 上級者向けの技法\\n   3. 注意点・よくある間違い\\n      a. 初心者が陥りやすい罠\\n      b. 回避方法・対処法\\n\\nE. 疑問・課題の解決\\n   1. よくある質問とその回答\\n      a. Q: よくある質問1\\n         A: 回答1\\n      b. Q: よくある質問2\\n         A: 回答2\\n   2. トラブルシューティング\\n      a. 問題の特定方法\\n      b. 解決手順\\n   3. さらなる学習リソース\\n      a. 参考資料・書籍\\n      b. 次のステップ\\n\\nF. まとめ・次への繋がり\\n   1. このセクションの要点\\n      a. 重要ポイント1\\n      b. 重要ポイント2\\n      c. 重要ポイント3\\n   2. 次のセクションとの関連性\\n      a. 次のセクションとの関連性1\\n      b. 次のセクションとの関連性2\\n   3. 復習チェックポイント\\n      a. 理解度確認項目1\\n      b. 理解度確認項目2\\n      c. 実践できるか確認"
+  "structured_outline_text": "講義の目的\\n  [このセクションで達成すべきゴールや学習成果を簡潔に記載]\\n\\n{context_info['section_title']}とは\\n  [定義を一言で簡潔に記載]\\n\\n{context_info['section_title']}の重要性\\n  ・[メリット1]\\n  ・[メリット2]\\n  ・[メリット3]\\n\\n{context_info['section_title']}の全体像\\n  [全体構造やSTEP、要素分解、各要素の役割を簡潔に説明]\\n\\n{context_info['section_title']}の具体的な解説\\n  [STEPごとの詳細な解説、進め方、手順、各要素の具体的な説明を全体像の3倍のボリュームで記載]\\n\\n{context_info['section_title']}の補足\\n  [本文で最も重要な要素を1つだけ選んで追加説明]\\n\\n{context_info['section_title']}の課題\\n  [講義視聴後に実践すべき具体的なアクションプラン]"
 }}
 ```
 
-各項目を{context_info['course_target']}レベルに適した詳細で実践的な内容で埋めてください。"""
+各項目を{context_info['course_target']}レベルに適した内容で、体言止めを基本に簡潔かつ実践的に記述してください。
+具体的な解説パートは全体像の3倍のボリュームで詳細に記載してください。"""
