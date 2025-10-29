@@ -32,9 +32,9 @@ class LectureGeneratorApp {
             }
         };
 
-        addEventListenerSafely('lectureForm', 'submit', (e) => {
+        addEventListenerSafely('generateBtn', 'click', (e) => {
             e.preventDefault();
-            this.handleSubmit();
+            this.generateAllSections();
         });
 
         addEventListenerSafely('downloadJSON', 'click', () => {
@@ -107,6 +107,76 @@ class LectureGeneratorApp {
         } finally {
             this.isGenerating = false;
             this.hideLoadingState();
+        }
+    }
+
+    async generateAllSections() {
+        // セクションが解析されているか確認
+        if (!this.parsedSections || this.parsedSections.length === 0) {
+            this.showToast('まず「目次を解析してセクション別ボタンを表示」をクリックしてください', 'error');
+            return;
+        }
+
+        if (this.isGenerating) {
+            this.showToast('既に生成処理が実行中です', 'error');
+            return;
+        }
+
+        const formData = new FormData(document.getElementById('lectureForm'));
+        const courseData = Object.fromEntries(formData.entries());
+
+        // 確認ダイアログ
+        const confirmed = confirm(`${this.parsedSections.length}個のセクションを順番に生成します。\n完了まで時間がかかる場合があります。\n\n続行しますか？`);
+        if (!confirmed) return;
+
+        this.isGenerating = true;
+
+        // ボタンを無効化
+        const generateBtn = document.getElementById('generateBtn');
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>全セクション生成中...';
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        try {
+            for (let i = 0; i < this.parsedSections.length; i++) {
+                const section = this.parsedSections[i];
+
+                this.showToast(`セクション ${i + 1}/${this.parsedSections.length}: 「${section.title}」を生成中...`, 'info');
+
+                try {
+                    // セクションの生成ボタンをプログラム的にトリガー
+                    await this.generateSectionContent(section, courseData, this.parsedSections);
+                    successCount++;
+
+                    // 少し待機（API制限対策）
+                    if (i < this.parsedSections.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                } catch (error) {
+                    console.error(`セクション「${section.title}」の生成エラー:`, error);
+                    errorCount++;
+                    this.showToast(`セクション「${section.title}」の生成に失敗しました`, 'error');
+                }
+            }
+
+            // 完了メッセージ
+            if (errorCount === 0) {
+                this.showToast(`✅ 全${successCount}セクションの生成が完了しました！`, 'success');
+            } else {
+                this.showToast(`⚠️ 生成完了: 成功 ${successCount}件 / 失敗 ${errorCount}件`, 'error');
+            }
+
+        } catch (error) {
+            console.error('一括生成エラー:', error);
+            this.showToast('一括生成中にエラーが発生しました', 'error');
+        } finally {
+            this.isGenerating = false;
+
+            // ボタンを有効化
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-bolt mr-2"></i>全セクションを一括生成する';
         }
     }
 
