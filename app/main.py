@@ -52,9 +52,9 @@ async def generate_lecture(
     request: Request,
     course_title: str = Form(...),
     outline: str = Form(...),
-    target_audience: str = Form(default="一般"),
+    target_audience: str = Form(default="初心者"),
     duration: int = Form(default=60),
-    difficulty: str = Form(default="中級")
+    tone: str = Form(default="通常")
 ):
     """
     講座コンテンツ生成エンドポイント
@@ -64,7 +64,7 @@ async def generate_lecture(
         outline: 講座の目次・概要
         target_audience: ターゲット受講者
         duration: 予定時間（分）
-        difficulty: 難易度レベル
+        tone: 口調・話し方のスタイル
     
     Returns:
         生成された講義台本のJSON
@@ -79,7 +79,7 @@ async def generate_lecture(
             "outline": outline,
             "target_audience": target_audience,
             "duration": duration,
-            "difficulty": difficulty
+            "tone": tone
         })
         
         return JSONResponse(content=result)
@@ -133,9 +133,9 @@ async def analyze_outline(
     request: Request,
     course_title: str = Form(...),
     outline: str = Form(...),
-    target_audience: str = Form(default="一般"),
+    target_audience: str = Form(default="初心者"),
     duration: int = Form(default=60),
-    difficulty: str = Form(default="中級")
+    tone: str = Form(default="通常")
 ):
     """
     目次解析エンドポイント - 目次を個別セクションに分割
@@ -145,7 +145,7 @@ async def analyze_outline(
         outline: 講座の目次・概要
         target_audience: ターゲット受講者
         duration: 予定時間（分）
-        difficulty: 難易度レベル
+        tone: 口調・話し方のスタイル
     
     Returns:
         解析されたセクション情報
@@ -164,7 +164,7 @@ async def analyze_outline(
             "title": course_title,
             "target_audience": target_audience,
             "duration": duration,
-            "difficulty": difficulty
+            "tone": tone
         }
         learning_path = parser.generate_learning_path(sections, course_info)
         
@@ -208,7 +208,8 @@ async def generate_section_content(request: Request):
         course_info = request_data.get('course_info')
         context_sections = request_data.get('context_sections', [])
         additional_elements = request_data.get('additional_elements', '')
-        
+        section_duration = request_data.get('section_duration')
+
         if not section or not course_info:
             return JSONResponse(
                 status_code=400,
@@ -217,14 +218,15 @@ async def generate_section_content(request: Request):
                     "message": "必要なデータが不足しています"
                 }
             )
-        
+
         # セクションコンテンツ生成
         service = SectionContentService()
         content = await service.generate_section_content(
             section=section,
             course_info=course_info,
             context_sections=context_sections,
-            additional_elements=additional_elements
+            additional_elements=additional_elements,
+            section_duration=section_duration
         )
         
         return JSONResponse(content={

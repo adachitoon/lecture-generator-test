@@ -601,11 +601,16 @@ class LectureGeneratorApp {
     createIndividualSections(sections, courseData) {
         const container = document.getElementById('individualSections');
         const statusBadge = document.getElementById('sectionStatusBadge');
-        const sectionCount = document.getElementById('sectionCount');
+        const sectionCountElement = document.getElementById('sectionCount');
         const initialState = document.getElementById('sectionsInitialState');
-        
+
         container.innerHTML = '';
-        
+
+        // 講座全体の想定時間を取得
+        const totalDuration = parseInt(courseData.duration) || 60;
+        const totalSections = sections.length;
+        const estimatedDurationPerSection = Math.max(5, Math.floor(totalDuration / totalSections));
+
         sections.forEach((section, index) => {
             const sectionDiv = document.createElement('div');
             sectionDiv.className = 'individual-section bg-white p-4 rounded-lg border border-gray-200';
@@ -613,19 +618,36 @@ class LectureGeneratorApp {
             
             sectionDiv.innerHTML = `
                 <div class="mb-4">
-                    <div class="flex items-center mb-2">
-                        <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm mr-3 font-medium">
-                            ${section.number}
-                        </span>
-                        <h3 class="text-lg font-semibold text-gray-800">${section.title}</h3>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm mr-3 font-medium">
+                                ${section.number}
+                            </span>
+                            <h3 class="text-lg font-semibold text-gray-800">${section.title}</h3>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm text-gray-600">⏱️</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="120"
+                                value="${estimatedDurationPerSection}"
+                                class="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                data-section-duration="${section.id}"
+                            />
+                            <span class="text-sm text-gray-600">分</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500 ml-2">
+                        推定時間: ${estimatedDurationPerSection}分 (全体: ${totalDuration}分 ÷ ${totalSections}セクション)
                     </div>
                 </div>
-                
+
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         追加で入れ込みたい要素 <span class="text-gray-400">(任意)</span>
                     </label>
-                    <textarea 
+                    <textarea
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                         rows="2"
                         placeholder="例：具体的な事例、実践演習、特別な注意点など..."
@@ -715,7 +737,7 @@ class LectureGeneratorApp {
         initialState.style.display = 'none';
         container.style.display = 'block';
         statusBadge.style.display = 'block';
-        sectionCount.textContent = sections.length;
+        sectionCountElement.textContent = sections.length;
     }
 
     clearIndividualSections() {
@@ -734,10 +756,14 @@ class LectureGeneratorApp {
         const sectionDiv = document.querySelector(`[data-section-id="${section.id}"]`);
         const generateBtn = sectionDiv.querySelector('.section-generate-btn');
         const resultsDiv = sectionDiv.querySelector('.section-results');
-        
+
         // 追加要素を取得
         const additionalInput = sectionDiv.querySelector(`[data-section-additional="${section.id}"]`);
         const additionalElements = additionalInput.value.trim();
+
+        // セクションの個別時間を取得
+        const durationInput = sectionDiv.querySelector(`[data-section-duration="${section.id}"]`);
+        const sectionDuration = parseInt(durationInput.value) || 10;
         
         try {
             // ボタンを無効化
@@ -757,10 +783,11 @@ class LectureGeneratorApp {
                     outline: courseData.outline,
                     target_audience: courseData.target_audience,
                     duration: parseInt(courseData.duration),
-                    difficulty: courseData.difficulty
+                    tone: courseData.tone
                 },
                 context_sections: allSections,
-                additional_elements: additionalElements
+                additional_elements: additionalElements,
+                section_duration: sectionDuration
             };
 
             const response = await fetch('/generate-section', {

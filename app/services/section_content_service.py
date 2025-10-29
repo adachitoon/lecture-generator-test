@@ -47,11 +47,12 @@ class SectionContentService:
         section: Dict[str, Any],
         course_info: Dict[str, Any],
         context_sections: List[Dict[str, Any]] = None,
-        additional_elements: str = ""
+        additional_elements: str = "",
+        section_duration: Optional[int] = None
     ) -> Dict[str, Any]:
         """特定セクションの高品質コンテンツを生成"""
         try:
-            context_info = self._build_section_context(section, course_info, context_sections, additional_elements)
+            context_info = self._build_section_context(section, course_info, context_sections, additional_elements, section_duration)
             structured_outline = await self._generate_content(section, context_info, "outline")
             spoken_script = await self._generate_content(section, context_info, "script", structured_outline)
             
@@ -80,14 +81,20 @@ class SectionContentService:
         section: Dict[str, Any],
         course_info: Dict[str, Any],
         context_sections: List[Dict[str, Any]] = None,
-        additional_elements: str = ""
+        additional_elements: str = "",
+        section_duration: Optional[int] = None
     ) -> Dict[str, Any]:
         """セクション用のコンテキスト情報を構築"""
-        
+
         learning_objectives = self.outline_parser._generate_learning_objectives(section)
         key_skills = self.outline_parser._extract_key_skills(section)
-        total_sections = len(context_sections) if context_sections else 1
-        estimated_duration = max(5, course_info.get('duration', 60) // max(total_sections, 1))
+
+        # 個別セクション時間が指定されていればそれを使用、なければ自動計算
+        if section_duration is not None:
+            estimated_duration = section_duration
+        else:
+            total_sections = len(context_sections) if context_sections else 1
+            estimated_duration = max(5, course_info.get('duration', 60) // max(total_sections, 1))
         
         previous_section = None
         next_section = None
@@ -100,8 +107,8 @@ class SectionContentService:
         
         return {
             "course_title": course_info.get('title', ''),
-            "course_target": course_info.get('target_audience', '一般'),
-            "course_difficulty": course_info.get('difficulty', '中級'),
+            "course_target": course_info.get('target_audience', '初心者'),
+            "course_tone": course_info.get('tone', '通常'),
             "section_title": section['title'],
             "section_number": section.get('number', ''),
             "subsections": section.get('subsections', []),
@@ -175,7 +182,7 @@ class SectionContentService:
         return f"""世界最高レベルの講師として、以下の構造化アウトラインに基づく話し言葉の台本を作成してください。
 
 【講座情報】
-講座: {context_info['course_title']} | 対象: {context_info['course_target']} | 難易度: {context_info['course_difficulty']}
+講座: {context_info['course_title']} | 対象: {context_info['course_target']} | 口調: {context_info['course_tone']}
 セクション: {context_info['section_number']}. {context_info['section_title']} | 時間: {context_info['estimated_duration']}分
 
 【構造化アウトライン】
@@ -217,7 +224,7 @@ class SectionContentService:
         return f"""講座設計専門家として、以下の構造でマインドマップ化しやすい体言止め形式の学習内容を設計してください。
 
 【講座情報】
-講座: {context_info['course_title']} | 対象: {context_info['course_target']} | 難易度: {context_info['course_difficulty']}
+講座: {context_info['course_title']} | 対象: {context_info['course_target']} | 口調: {context_info['course_tone']}
 セクション: {context_info['section_number']}. {context_info['section_title']} | 時間: {context_info['estimated_duration']}分
 サブセクション: {subsections}
 前後: 前「{prev_text}」→ 次「{next_text}」
